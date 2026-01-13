@@ -120,7 +120,7 @@ with st.sidebar:
     else:
         scale_options = {"中小企業": 1.0}
     
-    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=0)
+    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=2)
     multiplier = scale_options[company_scale]
     
     st.divider()
@@ -368,6 +368,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
