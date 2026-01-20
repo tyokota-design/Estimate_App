@@ -150,7 +150,7 @@ with st.sidebar:
     fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
 
 # --- メイン画面：タスク選択エリア ---
-st.title("🌱 Scope 3算定支援コンサルティング見積シミュレーション")
+st.title("🌱 Scope 3算定支援コンサルティング見積シミュレーション (社内に限る)")
 
 total_base_hours = fixed_hours 
 selected_tasks_list = []
@@ -368,6 +368,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
