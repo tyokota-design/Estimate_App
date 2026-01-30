@@ -165,8 +165,13 @@ with st.sidebar:
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
     st.divider()
-    # プラン選択（企業規模の下、かつ計算の前に配置）
-    plan_type = st.radio("支援プラン選択", ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], index=0)
+    # プラン選択（keyを追加して重複エラーを回避）
+    plan_type = st.radio(
+        "支援プラン選択", 
+        ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], 
+        index=0,
+        key="plan_selector_primary"
+    )
     
     with st.expander("💡 フルパッケージの推奨基準"):
         st.markdown("""
@@ -179,8 +184,10 @@ with st.sidebar:
 
     # プランに応じた基礎工数の計算ロジック
     if plan_type == "フルパッケージ (90h〜)":
-        # 90hをベースに、オプションを加算（MTGは90hに含む想定）
-        fixed_hours = 90.0 + (workshop_count * 5.0) + english_hours
+        # 勉強会1回分(5h)は90hに含まれる。2回目(回数-1)から5hずつ加算。
+        # 英語対応(+10h)も別途加算。
+        additional_workshop_h = max(0, (workshop_count - 1) * 5.0)
+        fixed_hours = 90.0 + additional_workshop_h + english_hours
     else:
         # ピンポイント
         fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
@@ -200,7 +207,7 @@ if plan_type == "フルパッケージ (90h〜)":
         "Task": "Scope 3算定支援フルパッケージ", 
         "Hours": total_base_hours
     })
-    st.info(f"✅ フルパッケージプラン適用中（ベース90h + オプション × グループ係数 {group_multiplier}x）")
+    st.info(f"✅ フルパッケージプラン適用中（ベース90h[勉強会1回込] + 追加オプション × グループ係数 {group_multiplier}x）")
 
 else:
     # ピンポイント時：従来の個別選択
@@ -417,6 +424,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
