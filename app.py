@@ -123,14 +123,14 @@ with st.sidebar:
     # 企業規模の選択
     options_list = list(scale_options.keys())
     default_index = options_list.index("中堅企業") if "中堅企業" in options_list else 0
-    company_scale = st.selectbox("企業規模", options_list, index=default_index)
+    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=1)
     multiplier = scale_options[company_scale]
 
-    # --- 修正点：プラン選択をここに移動し、ガイドを追加 ---
+    # --- 追加：支援プラン選択とガイド ---
     st.divider()
-    plan_type = st.radio("支援プラン選択", ["ピンポイント (カスタム)", "フルパッケージ (90h基準)"])
+    plan_type = st.radio("支援プラン選択", ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], index=0)
     
-    with st.expander("💡 フルパッケージの判定基準"):
+    with st.expander("💡 フルパッケージの推奨基準"):
         st.caption("以下のようなお客様にはフルパッケージを推奨してください：")
         st.markdown("""
         - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
@@ -160,16 +160,16 @@ with st.sidebar:
     duration_months = st.slider("支援期間 (ヶ月)", 1, 12, 6)
     end_date = start_date + relativedelta(months=duration_months)
     
-    mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
+   mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
-    # --- 修正点：フルパッケージでも変数を反映させる計算式 ---
-    if plan_type == "フルパッケージ (90h基準)":
-        # 90hをベースに、英語対応、勉強会、MTG回数を加算（グループ会社係数も考慮する場合）
-        # ※単体企業想定とのことですが、グループ数が増えた場合の重み付けも維持しています
-        base_pkg_hours = 90.0 * group_multiplier
-        fixed_hours = base_pkg_hours + (workshop_count * 5.0) + english_hours
+    # プランに応じた基礎工数の計算
+    if plan_type == "フルパッケージ (90h〜)":
+        # 90hをベースに、勉強会(5h×回数)と英語(10h)を加算。
+        # ※定期MTGは90hに含まれる想定で計算
+        fixed_hours = 90.0 + (workshop_count * 5.0) + english_hours
     else:
+        # ピンポイント（従来通り）
         fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
 
 # --- メイン画面：タスク選択エリア ---
@@ -412,6 +412,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
