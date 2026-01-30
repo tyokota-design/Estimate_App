@@ -120,9 +120,25 @@ with st.sidebar:
     else:
         scale_options = {"中小企業": 1.0}
     
-    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=2)
+    # 企業規模の選択
+    options_list = list(scale_options.keys())
+    default_index = options_list.index("中堅企業") if "中堅企業" in options_list else 0
+    company_scale = st.selectbox("企業規模", options_list, index=default_index)
     multiplier = scale_options[company_scale]
+
+    # --- 修正点：プラン選択をここに移動し、ガイドを追加 ---
+    st.divider()
+    plan_type = st.radio("支援プラン選択", ["ピンポイント (カスタム)", "フルパッケージ (90h基準)"])
     
+    with st.expander("💡 フルパッケージの判定基準"):
+        st.caption("以下のようなお客様にはフルパッケージを推奨してください：")
+        st.markdown("""
+        - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
+        - 「Scope3の内容は理解しているが、自社がどのカテゴリを算定すべきか分からない」
+        - 「専門家の知見をフル活用して、正確に算定結果を開示していきたい」
+        - 「社内リソースが不足しており、算定のリードを全面的に任せたい」
+        """)
+
     st.divider()
     company_count = st.select_slider("グループ会社数", options=[0, 1, 2, 3, 4, 5, 6],
                                      format_func=lambda x: f"{x}社" if x <= 5 else "5社超")
@@ -147,12 +163,12 @@ with st.sidebar:
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
-    st.divider()
-    # プラン選択の追加
-    plan_type = st.radio("支援プラン選択", ["ピンポイント (カスタム)", "フルパッケージ (90h固定)"])
-
-    if plan_type == "フルパッケージ (90h固定)":
-        fixed_hours = 90.0
+    # --- 修正点：フルパッケージでも変数を反映させる計算式 ---
+    if plan_type == "フルパッケージ (90h基準)":
+        # 90hをベースに、英語対応、勉強会、MTG回数を加算（グループ会社係数も考慮する場合）
+        # ※単体企業想定とのことですが、グループ数が増えた場合の重み付けも維持しています
+        base_pkg_hours = 90.0 * group_multiplier
+        fixed_hours = base_pkg_hours + (workshop_count * 5.0) + english_hours
     else:
         fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
 
@@ -162,10 +178,14 @@ st.title("🌱 Scope 3算定支援コンサルティング見積シミュレー�
 total_base_hours = fixed_hours 
 selected_tasks_list = []
 
-if plan_type == "フルパッケージ (90h固定)":
-    # フルパッケージの場合：タスクを1つに固定して表示
-    selected_tasks_list.append({"Category": "フルパッケージ", "Task": "Scope 3算定支援フルパッケージ", "Hours": 90.0})
-    st.info("💡 フルパッケージプランが適用されています。工数は90時間で固定されます。")
+if plan_type == "フルパッケージ (90h基準)":
+    # フルパッケージの場合：内訳として表示
+    selected_tasks_list.append({
+        "Category": "フルパッケージ", 
+        "Task": f"Scope 3算定支援フルパッケージ (ベース90h × 規模係数等)", 
+        "Hours": total_base_hours
+    })
+    st.info(f"💡 フルパッケージプランが適用されています。基本工数にオプション（勉強会・英語等）を加算した合計 {total_base_hours:.1f}h を基準に見積計算を行っています。")
 
 else:
     # ピンポイントの場合：従来のチェックボックスを表示
@@ -392,6 +412,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
