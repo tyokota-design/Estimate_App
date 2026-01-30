@@ -109,11 +109,6 @@ def toggle_category_all(cat_name, key):
         st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
 
 # --- サイドバー：基本情報の入力エリア ---
-サイドバーのコードを、重複を排除し、計算ロジック（勉強会1回込で90h、2回目から+5h）を正しく反映した状態で全量書き出します。
-
-1. サイドバー：基本情報の入力エリア（完全版）
-Python
-# --- サイドバー：基本情報の入力エリア ---
 with st.sidebar:
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
@@ -415,6 +410,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
