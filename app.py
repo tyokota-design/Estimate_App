@@ -110,6 +110,21 @@ def toggle_category_all(cat_name, key):
 
 # --- サイドバー：基本情報の入力エリア ---
 with st.sidebar:
+    st.markdown("""
+        <div style="
+            background-color: #fee2e2; 
+            border: 1px solid #ef4444; 
+            padding: 10px; 
+            border-radius: 8px; 
+            text-align: center;
+            margin-bottom: 20px;
+        ">
+            <span style="color: #b91c1c; font-weight: bold; font-size: 0.9em;">
+                ⚠️ 顧客提示厳禁 / Internal Use Only
+            </span>
+        </div>
+    """, unsafe_allow_html=True)
+    
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
     start_date = st.date_input("支援開始予定月", datetime.now())
@@ -425,6 +440,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
