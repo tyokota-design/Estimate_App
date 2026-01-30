@@ -160,16 +160,29 @@ with st.sidebar:
     duration_months = st.slider("支援期間 (ヶ月)", 1, 12, 6)
     end_date = start_date + relativedelta(months=duration_months)
     
-   mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
+  # --- サイドバー内：入力項目 ---
+    mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
-    # プランに応じた基礎工数の計算
+    st.divider()
+    # プラン選択（企業規模の下、かつ計算の前に配置）
+    plan_type = st.radio("支援プラン選択", ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], index=0)
+    
+    with st.expander("💡 フルパッケージの推奨基準"):
+        st.markdown("""
+        以下のような場合はフルパッケージを推奨します：
+        - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
+        - 「Scope3の内容は理解しているが、自社がどのカテゴリを算定すべきか分からない」
+        - 「専門家の知見をフル活用して、正確に算定結果を開示していきたい」
+        - 「社内リソースが不足しており、算定のリードを全面的に任せたい」
+        """)
+
+    # プランに応じた基礎工数の計算ロジック
     if plan_type == "フルパッケージ (90h〜)":
-        # 90hをベースに、勉強会(5h×回数)と英語(10h)を加算。
-        # ※定期MTGは90hに含まれる想定で計算
+        # 90hをベースに、オプションを加算（MTGは90hに含む想定）
         fixed_hours = 90.0 + (workshop_count * 5.0) + english_hours
     else:
-        # ピンポイント（従来通り）
+        # ピンポイント
         fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
 
 # --- メイン画面：タスク選択エリア ---
@@ -179,8 +192,7 @@ total_base_hours = fixed_hours
 selected_tasks_list = []
 
 if plan_type == "フルパッケージ (90h〜)":
-    # 最終工数にグループ会社係数を適用
-    # ※共通系以外のタスクが膨らむ想定で全体に乗算
+    # フルパッケージ時：全体にグループ会社係数を適用
     total_base_hours = fixed_hours * group_multiplier
     
     selected_tasks_list.append({
@@ -188,10 +200,10 @@ if plan_type == "フルパッケージ (90h〜)":
         "Task": "Scope 3算定支援フルパッケージ", 
         "Hours": total_base_hours
     })
-    st.info(f"✅ フルパッケージプラン適用中（ベース90h + オプション工数 × グループ係数 {group_multiplier}x）")
+    st.info(f"✅ フルパッケージプラン適用中（ベース90h + オプション × グループ係数 {group_multiplier}x）")
 
 else:
-    # ピンポイントの場合：従来のチェックボックスを表示
+    # ピンポイント時：従来の個別選択
     # 固定項目の自動集計
     selected_tasks_list.append({"Category": "その他", "Task": "定期MTG", "Hours": duration_months * mtg_freq})
     if workshop_count > 0:
@@ -202,11 +214,9 @@ else:
     # セグメント別タスクの表示
     if not df_master.empty:
         for group in ["共通", "上流", "下流"]:
-            # グループごとのヘッダー色設定
             h_class = "common-header" if group == "共通" else "upstream-header" if group == "上流" else "downstream-header"
             st.markdown(f'<div class="section-header {h_class}">{group}セグメント</div>', unsafe_allow_html=True)
             
-            # グループ一括選択
             g_key = f"g_all_{group}"
             st.checkbox(f"【{group}】を一括選択", key=g_key, on_change=toggle_group_all, args=(group, g_key))
             
@@ -217,13 +227,11 @@ else:
             for idx, cat_name in enumerate(cat_list):
                 c_df = g_df[g_df["Category"] == cat_name]
                 with cols[idx % 2]:
-                    # セッション状態の初期化
                     for _, r in c_df.iterrows():
                         t_key = f"task_{cat_name}_{r['Task']}"
                         if t_key not in st.session_state:
                             st.session_state[t_key] = r['Required']
 
-                    # 選択状況のラベル作成
                     selected_count = sum([st.session_state.get(f"task_{cat_name}_{r['Task']}", False) for _, r in c_df.iterrows()])
                     
                     if selected_count == len(c_df):
@@ -233,7 +241,6 @@ else:
                     else:
                         display_label = f"📁 {cat_name} （未選択）"
 
-                    # アコーディオン（Expander）の表示
                     is_expanded = selected_count > 0
                     with st.expander(display_label, expanded=is_expanded):
                         c_key = f"all_cat_{cat_name}"
@@ -241,21 +248,16 @@ else:
                         st.checkbox(f"└ {cat_name}を一括選択", key=c_key, on_change=toggle_category_all, args=(cat_name, c_key))
                         st.divider()
                         
-                        # 個別タスクのチェックボックス表示
                         for _, row in c_df.iterrows():
                             t_key = f"task_{row['Category']}_{row['Task']}"
                             base_h = row["Hours"]
-                            # グループ会社係数の計算
                             calc_h = base_h * group_multiplier if (company_count > 0 and row["Group"] != "共通") else base_h
                             
                             is_checked = st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
-                            
-                            # 説明文（💡付き）の表示
                             desc_text = str(row.get('Description', '')).strip()
                             if desc_text and desc_text != 'nan' and desc_text != '':
                                 st.markdown(f'<div class="desc-box">💡 {desc_text}</div>', unsafe_allow_html=True)
 
-                            # 選択されたタスクをリストに追加
                             if is_checked:
                                 total_base_hours += calc_h
                                 display_cat = "その他" if (cat_name.startswith("0") or not cat_name.startswith("C")) else cat_name
@@ -415,6 +417,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
