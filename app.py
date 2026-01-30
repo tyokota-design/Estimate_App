@@ -118,12 +118,12 @@ with st.sidebar:
     if not df_scale.empty:
         scale_options = dict(zip(df_scale['ScaleName'], df_scale['Multiplier']))
     else:
-        scale_options = {"中小企業": 1.0}
+        scale_options = {"中堅企業": 1.0}
     
     # 企業規模の選択
     options_list = list(scale_options.keys())
     default_index = options_list.index("中堅企業") if "中堅企業" in options_list else 0
-    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=1)
+    company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=2)
     multiplier = scale_options[company_scale]
 
     # --- 追加：支援プラン選択とガイド ---
@@ -424,6 +424,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
