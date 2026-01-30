@@ -109,6 +109,11 @@ def toggle_category_all(cat_name, key):
         st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
 
 # --- サイドバー：基本情報の入力エリア ---
+サイドバーのコードを、重複を排除し、計算ロジック（勉強会1回込で90h、2回目から+5h）を正しく反映した状態で全量書き出します。
+
+1. サイドバー：基本情報の入力エリア（完全版）
+Python
+# --- サイドバー：基本情報の入力エリア ---
 with st.sidebar:
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
@@ -118,26 +123,25 @@ with st.sidebar:
     if not df_scale.empty:
         scale_options = dict(zip(df_scale['ScaleName'], df_scale['Multiplier']))
     else:
+        # マスタが読み込めない場合の予備
         scale_options = {"中堅企業": 1.0}
     
-    # 企業規模の選択
-    options_list = list(scale_options.keys())
-    default_index = options_list.index("中堅企業") if "中堅企業" in options_list else 0
+    # 企業規模の選択 (index=2)
     company_scale = st.selectbox("企業規模", list(scale_options.keys()), index=2)
     multiplier = scale_options[company_scale]
 
-    # --- 追加：支援プラン選択とガイド ---
     st.divider()
+    # 支援プラン選択
     plan_type = st.radio(
-    "支援プラン選択", 
-    ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], 
-    index=0,
-    key="plan_selector_primary"
-)
+        "支援プラン選択", 
+        ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], 
+        index=0,
+        key="plan_selector_final"
+    )
     
     with st.expander("💡 フルパッケージの推奨基準"):
-        st.caption("以下のようなお客様にはフルパッケージを推奨してください：")
         st.markdown("""
+        以下のような場合はフルパッケージを推奨します：
         - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
         - 「Scope3の内容は理解しているが、自社がどのカテゴリを算定すべきか分からない」
         - 「専門家の知見をフル活用して、正確に算定結果を開示していきたい」
@@ -165,37 +169,19 @@ with st.sidebar:
     duration_months = st.slider("支援期間 (ヶ月)", 1, 12, 6)
     end_date = start_date + relativedelta(months=duration_months)
     
-  # --- サイドバー内：入力項目 ---
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
-    st.divider()
-    # プラン選択（keyを追加して重複エラーを回避）
-    plan_type = st.radio(
-        "支援プラン選択", 
-        ["フルパッケージ (90h〜)", "ピンポイント (カスタム)"], 
-        index=0,
-        key="plan_selector_primary"
-    )
-    
-    with st.expander("💡 フルパッケージの推奨基準"):
-        st.markdown("""
-        以下のような場合はフルパッケージを推奨します：
-        - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
-        - 「Scope3の内容は理解しているが、自社がどのカテゴリを算定すべきか分からない」
-        - 「専門家の知見をフル活用して、正確に算定結果を開示していきたい」
-        - 「社内リソースが不足しており、算定のリードを全面的に任せたい」
-        """)
-
     # プランに応じた基礎工数の計算ロジック
     if plan_type == "フルパッケージ (90h〜)":
-        # 勉強会1回分(5h)は90hに含まれる。2回目(回数-1)から5hずつ加算。
+        # 勉強会1回分(5h)は90hに含まれる。2回目から5hずつ加算。
         # 英語対応(+10h)も別途加算。
-        additional_workshop_h = max(0, (workshop_count - 1) * 5.0)
-        fixed_hours = 90.0 + additional_workshop_h + english_hours
+        add_workshop_h = max(0, (workshop_count - 1) * 5.0)
+        fixed_hours = 90.0 + add_workshop_h + english_hours
     else:
-        # ピンポイント
+        # ピンポイント（各要素の積み上げ）
         fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
+
 
 # --- メイン画面：タスク選択エリア ---
 st.title("🌱 Scope 3算定支援コンサルティング見積シミュレーション (社内に限る)")
@@ -429,6 +415,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
