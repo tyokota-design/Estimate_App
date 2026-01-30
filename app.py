@@ -134,14 +134,29 @@ with st.sidebar:
         key="plan_selector_final"
     )
     
-    with st.expander("💡 フルパッケージの推奨基準"):
-        st.markdown("""
-        以下のような場合はフルパッケージを推奨します：
-        - 「初めての取り組みで（または少しやってみたが）、全体像や進め方がイメージできない」
-        - 「Scope3の内容は理解しているが、自社がどのカテゴリを算定すべきか分からない」
-        - 「専門家の知見をフル活用して、正確に算定結果を開示していきたい」
-        - 「社内リソースが不足しており、算定のリードを全面的に任せたい」
-        """)
+    with st.expander("✨ フルパッケージの推奨基準"):
+        st.markdown(f"""
+            <div style="
+                background-color: #f0fdfa; 
+                border: 1px solid #99f6e4; 
+                padding: 15px; 
+                border-radius: 12px; 
+                font-size: 0.85em; 
+                color: #0d9488;
+                line-height: 1.6;
+                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            ">
+                <div style="font-weight: bold; margin-bottom: 8px; display: flex; align-items: center;">
+                    <span style="font-size: 1.2em; margin-right: 5px;">✅</span> 迷ったらこちらをチェック
+                </div>
+                <ul style="margin: 0; padding-left: 20px; list-style-type: '🌱 ';">
+                    <li style="margin-bottom: 5px;">「初めての取り組みで、全体像や進め方がイメージできない」</li>
+                    <li style="margin-bottom: 5px;">「どのカテゴリを算定すべきか自社では判断できない」</li>
+                    <li style="margin-bottom: 5px;">「専門家の知見をフル活用し、正確に開示していきたい」</li>
+                    <li style="margin-bottom: 5px;">「社内リソースが不足しており、リードを全面的に任せたい」</li>
+                </ul>
+            </div>
+        """, unsafe_allow_html=True)
 
     st.divider()
     company_count = st.select_slider("グループ会社数", options=[0, 1, 2, 3, 4, 5, 6],
@@ -410,6 +425,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
