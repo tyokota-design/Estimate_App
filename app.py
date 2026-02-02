@@ -261,15 +261,10 @@ if ai_analyze_button:
                 """, unsafe_allow_html=True)
                 
             except Exception as e:
-                # 最終手段：モデル名をあえて古い形式に変えてリトライ
-                try:
-                    # ここで models/ をつける形式を試す
-                    model_retry = genai.GenerativeModel('models/gemini-1.5-flash')
-                    response = model_retry.generate_content(prompt)
-                    st.markdown(f'<div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px; margin-bottom: 30px;">{response.text}</div>', unsafe_allow_html=True)
-                except Exception as e2:
-                    st.error("AI診断が通信エラーにより実行できません。")
-                    st.info("💡 解決策: Pythonのバージョンが 3.14 と非常に新しいため、ライブラリ側が未対応の可能性があります。もし可能なら Python 3.10〜3.12 でお試しいただくか、Streamlit Cloud（Web）へアップロードして動作確認してみてください。")
+                # 💡 原因を特定するために、エラーの生の内容を表示させます
+                st.error(f"AI診断エラー詳細: {str(e)}")
+
+
 total_base_hours = fixed_hours 
 selected_tasks_list = []
 
@@ -499,6 +494,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
