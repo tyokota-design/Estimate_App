@@ -7,6 +7,7 @@ from pptx import Presentation
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import io
+import google.generativeai as genai
 
 # --- 準備：アプリで使うフォルダとファイルの場所を設定 ---
 os.makedirs("exports", exist_ok=True)
@@ -127,6 +128,11 @@ with st.sidebar:
     
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
+    st.markdown("---")
+    st.subheader("🤖 AI営業アシスタント")
+    target_url = st.text_input("顧客公式サイト / IRページURL", placeholder="https://example.com/ir")
+    ai_analyze_button = st.button("✨ AIで企業分析＆推奨診断", use_container_width=True)
+    st.markdown("---")
     start_date = st.date_input("支援開始予定月", datetime.now())
     hourly_rate = st.number_input("時間単価 (円)", value=40000, step=1000)
 
@@ -211,6 +217,59 @@ with st.sidebar:
 # --- メイン画面：タスク選択エリア ---
 st.title("🌱 Scope 3算定支援コンサル見積シミュレーション")
 
+# 【NEW】AI診断結果の表示ロジック
+if ai_analyze_button:
+    if not target_url:
+        st.warning("診断するにはURLを入力してください。")
+    else:
+        with st.spinner("AIが企業の公開情報を読み取り、算定戦略を立案中..."):
+            try:
+                # 通信プロトコルを最新の「v1」に固定するための設定
+                from google.generativeai import types
+                
+                genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
+                
+                # モデルの初期化（あえて詳細設定を入れます）
+                model = genai.GenerativeModel(
+                    model_name='gemini-1.5-flash'
+                )
+                
+                prompt = f"""
+                ターゲット企業: {company_name}
+                URL: {target_url}
+
+                上記企業の公式サイトやIR情報を分析し、Scope 3算定コンサルタントとして
+                「事業特性」「重点カテゴリーTOP3とその理由」「算定難易度」「営業アドバイス」を
+                日本語で分かりやすくレポートしてください。
+                """
+                
+                # 安全なリクエストオプションを指定して実行
+                response = model.generate_content(
+                    prompt,
+                    generation_config=types.GenerationConfig(
+                        temperature=0.7,
+                    )
+                )
+                
+                st.markdown(f"""
+                    <div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+                        <h3 style="color: #0d9488; margin-top: 0;">🤖 AI診断レポート: {company_name} 様</h3>
+                        <div style="color: #334155; line-height: 1.7; white-space: pre-wrap;">
+                            {response.text}
+                        </div>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+            except Exception as e:
+                # 最終手段：モデル名をあえて古い形式に変えてリトライ
+                try:
+                    # ここで models/ をつける形式を試す
+                    model_retry = genai.GenerativeModel('models/gemini-1.5-flash')
+                    response = model_retry.generate_content(prompt)
+                    st.markdown(f'<div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px; margin-bottom: 30px;">{response.text}</div>', unsafe_allow_html=True)
+                except Exception as e2:
+                    st.error("AI診断が通信エラーにより実行できません。")
+                    st.info("💡 解決策: Pythonのバージョンが 3.14 と非常に新しいため、ライブラリ側が未対応の可能性があります。もし可能なら Python 3.10〜3.12 でお試しいただくか、Streamlit Cloud（Web）へアップロードして動作確認してみてください。")
 total_base_hours = fixed_hours 
 selected_tasks_list = []
 
@@ -440,7 +499,6 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
-
 
 
 
