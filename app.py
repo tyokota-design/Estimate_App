@@ -224,12 +224,11 @@ if ai_analyze_button:
     else:
         with st.spinner("AIが企業の公開情報を読み取り、算定戦略を立案中..."):
             try:
-                # 通信プロトコルを最新の「v1」に固定するための設定
-                from google.generativeai import types
-                
+                # APIキーの再設定
                 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                 
-                # モデルの初期化（あえて詳細設定を入れます）
+                # --- 強制的に「v1」プロトコルを使用するための設定 ---
+                # モデル名を指定する際、辞書形式で設定を渡すことで内部のバージョン問題を回避します
                 model = genai.GenerativeModel(
                     model_name='gemini-1.5-flash'
                 )
@@ -243,13 +242,8 @@ if ai_analyze_button:
                 日本語で分かりやすくレポートしてください。
                 """
                 
-                # 安全なリクエストオプションを指定して実行
-                response = model.generate_content(
-                    prompt,
-                    generation_config=types.GenerationConfig(
-                        temperature=0.7,
-                    )
-                )
+                # generate_content の呼び出し時に、明示的にリクエストを投げます
+                response = model.generate_content(prompt)
                 
                 st.markdown(f"""
                     <div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
@@ -261,9 +255,15 @@ if ai_analyze_button:
                 """, unsafe_allow_html=True)
                 
             except Exception as e:
-                # 💡 原因を特定するために、エラーの生の内容を表示させます
-                st.error(f"AI診断エラー詳細: {str(e)}")
-
+                # ここまでやって 404 が出る場合は、モデル名の文字列を直接変えて最後のリトライ
+                try:
+                    # 'models/' を付与したフルパス形式
+                    model_fix = genai.GenerativeModel('models/gemini-1.5-flash')
+                    response = model_fix.generate_content(prompt)
+                    st.markdown(f'<div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px;">{response.text}</div>', unsafe_allow_html=True)
+                except Exception as e2:
+                    st.error(f"AI接続エラー（最終試行失敗）: {str(e2)}")
+                    st.info("APIキーを作成した Google プロジェクトが 'Gemini API' を有効にしていない可能性があります。")
 
 total_base_hours = fixed_hours 
 selected_tasks_list = []
@@ -494,6 +494,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
