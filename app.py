@@ -127,8 +127,6 @@ with st.sidebar:
     
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
-    st.markdown("---")
-    st.markdown("---")
     start_date = st.date_input("支援開始予定月", datetime.now())
     hourly_rate = st.number_input("時間単価 (円)", value=40000, step=1000)
 
@@ -442,6 +440,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
