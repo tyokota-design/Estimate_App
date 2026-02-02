@@ -1,3 +1,6 @@
+google-generativeai
 pandas
-python-pptx
 openpyxl
+altair
+python-pptx
+streamlit
