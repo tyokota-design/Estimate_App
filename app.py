@@ -7,7 +7,6 @@ from pptx import Presentation
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import io
-import google.generativeai as genai
 
 # --- 準備：アプリで使うフォルダとファイルの場所を設定 ---
 os.makedirs("exports", exist_ok=True)
@@ -129,9 +128,6 @@ with st.sidebar:
     st.header("⚙️ 基本設定")
     company_name = st.text_input("会社名", value="〇〇株式会社")
     st.markdown("---")
-    st.subheader("🤖 AI営業アシスタント")
-    target_url = st.text_input("顧客公式サイト / IRページURL", placeholder="https://example.com/ir")
-    ai_analyze_button = st.button("✨ AIで企業分析＆推奨診断", use_container_width=True)
     st.markdown("---")
     start_date = st.date_input("支援開始予定月", datetime.now())
     hourly_rate = st.number_input("時間単価 (円)", value=40000, step=1000)
@@ -216,38 +212,6 @@ with st.sidebar:
 
 # --- メイン画面：タスク選択エリア ---
 st.title("🌱 Scope 3算定支援コンサル見積シミュレーション")
-
-# 【NEW】AI診断結果の表示ロジック
-# 【最終手段】とにかく動かすためのコード
-if ai_analyze_button:
-    if not target_url:
-        st.warning("URLを入力してください。")
-    else:
-        with st.spinner("AIが分析中..."):
-            try:
-                # 1. APIキーの設定
-                genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
-                
-                # 2. モデルを「gemini-pro」に指定（これが一番エラーが出にくいです）
-                model = genai.GenerativeModel('gemini-pro')
-                
-                # 3. 超シンプルな指示
-                prompt = f"URL:{target_url} の企業がScope3算定で重視すべきカテゴリを3つ、日本語で教えて。"
-                
-                # 4. 実行
-                response = model.generate_content(prompt)
-                
-                # 5. 結果表示
-                st.success("AI診断に成功しました！")
-                st.markdown(f"""
-                    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
-                        {response.text}
-                    </div>
-                """, unsafe_allow_html=True)
-                
-            except Exception as e:
-                # ここでもエラーが出る場合は、エラー内容を表示
-                st.error(f"エラーが発生しました: {str(e)}")
 
 total_base_hours = fixed_hours 
 selected_tasks_list = []
@@ -478,6 +442,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
