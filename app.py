@@ -218,52 +218,36 @@ with st.sidebar:
 st.title("🌱 Scope 3算定支援コンサル見積シミュレーション")
 
 # 【NEW】AI診断結果の表示ロジック
+# 【最終手段】とにかく動かすためのコード
 if ai_analyze_button:
     if not target_url:
-        st.warning("診断するにはURLを入力してください。")
+        st.warning("URLを入力してください。")
     else:
-        with st.spinner("AIが企業の公開情報を読み取り、算定戦略を立案中..."):
+        with st.spinner("AIが分析中..."):
             try:
-                # APIキーの再設定
+                # 1. APIキーの設定
                 genai.configure(api_key=st.secrets["GEMINI_API_KEY"])
                 
-                # --- 強制的に「v1」プロトコルを使用するための設定 ---
-                # モデル名を指定する際、辞書形式で設定を渡すことで内部のバージョン問題を回避します
-                model = genai.GenerativeModel(
-                    model_name='gemini-1.5-flash'
-                )
+                # 2. モデルを「gemini-pro」に指定（これが一番エラーが出にくいです）
+                model = genai.GenerativeModel('gemini-pro')
                 
-                prompt = f"""
-                ターゲット企業: {company_name}
-                URL: {target_url}
-
-                上記企業の公式サイトやIR情報を分析し、Scope 3算定コンサルタントとして
-                「事業特性」「重点カテゴリーTOP3とその理由」「算定難易度」「営業アドバイス」を
-                日本語で分かりやすくレポートしてください。
-                """
+                # 3. 超シンプルな指示
+                prompt = f"URL:{target_url} の企業がScope3算定で重視すべきカテゴリを3つ、日本語で教えて。"
                 
-                # generate_content の呼び出し時に、明示的にリクエストを投げます
+                # 4. 実行
                 response = model.generate_content(prompt)
                 
+                # 5. 結果表示
+                st.success("AI診断に成功しました！")
                 st.markdown(f"""
-                    <div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px; margin-bottom: 30px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
-                        <h3 style="color: #0d9488; margin-top: 0;">🤖 AI診断レポート: {company_name} 様</h3>
-                        <div style="color: #334155; line-height: 1.7; white-space: pre-wrap;">
-                            {response.text}
-                        </div>
+                    <div style="background-color: white; border: 1px solid #ddd; padding: 20px; border-radius: 10px;">
+                        {response.text}
                     </div>
                 """, unsafe_allow_html=True)
                 
             except Exception as e:
-                # ここまでやって 404 が出る場合は、モデル名の文字列を直接変えて最後のリトライ
-                try:
-                    # 'models/' を付与したフルパス形式
-                    model_fix = genai.GenerativeModel('models/gemini-1.5-flash')
-                    response = model_fix.generate_content(prompt)
-                    st.markdown(f'<div style="background-color: #f0fdfa; border: 2px solid #0d9488; padding: 25px; border-radius: 15px;">{response.text}</div>', unsafe_allow_html=True)
-                except Exception as e2:
-                    st.error(f"AI接続エラー（最終試行失敗）: {str(e2)}")
-                    st.info("APIキーを作成した Google プロジェクトが 'Gemini API' を有効にしていない可能性があります。")
+                # ここでもエラーが出る場合は、エラー内容を表示
+                st.error(f"エラーが発生しました: {str(e)}")
 
 total_base_hours = fixed_hours 
 selected_tasks_list = []
@@ -494,6 +478,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
