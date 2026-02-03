@@ -324,7 +324,6 @@ if selected_tasks_list and not is_special_case:
     st.markdown(html, unsafe_allow_html=True)
 
 # --- 画面表示：見積金額の計算結果 ---
-# --- 画面表示：見積金額の計算結果 ---
 adj_h = total_base_hours * multiplier
 net_price = adj_h * hourly_rate
 tax_price = net_price * 1.1
@@ -354,7 +353,7 @@ else:
                 </div>
                 <div>
                     <p style="margin:0; font-size:0.8em; opacity:0.8;">想定支援期間</p>
-                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{calculated_duration} ヶ月</p>
+                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{int(duration_months)} ヶ月</p>
                 </div>
                 <div>
                     <p style="margin:0; font-size:0.8em; opacity:0.8;">完了予定</p>
@@ -470,6 +469,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
