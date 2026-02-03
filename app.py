@@ -8,6 +8,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import io
 
+
 # --- 準備：アプリで使うフォルダとファイルの場所を設定 ---
 os.makedirs("exports", exist_ok=True)
 MASTER_FILE = "master_data.xlsx"
@@ -191,8 +192,9 @@ with st.sidebar:
     english_hours = 10 if is_eng else 0
             
     st.divider()
-    duration_months = st.slider("支援期間 (ヶ月)", 1, 12, 6)
-    end_date = start_date + relativedelta(months=duration_months)
+    st.subheader("📅 スケジュール設定")
+    # 月間想定稼働時間の入力（デフォルト15h）
+    monthly_work_hours = st.number_input("月間想定稼働時間 (h/月)", value=15.0, step=1.0)
     
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
@@ -316,9 +318,20 @@ if selected_tasks_list and not is_special_case:
     st.markdown(html, unsafe_allow_html=True)
 
 # --- 画面表示：見積金額の計算結果 ---
+# --- 画面表示：見積金額の計算結果 ---
 adj_h = total_base_hours * multiplier
 net_price = adj_h * hourly_rate
 tax_price = net_price * 1.1
+
+# --- 想定期間の自動計算 (小数点切り上げ + 1ヶ月バッファ) ---
+if monthly_work_hours > 0:
+    # 小数点以下切り上げ：math.ceil
+    calculated_duration = math.ceil(adj_h / monthly_work_hours) + 1
+else:
+    calculated_duration = 1
+
+# 終了予定月の再計算
+end_date = start_date + relativedelta(months=calculated_duration)
 
 if is_special_case:
     st.markdown('<div style="background-color: #EB5228; color: white; padding: 20px; border-radius: 10px; text-align: center; font-size: 1.5em; font-weight: bold; margin-top: 20px;">個別見積（SAへ要相談）</div>', unsafe_allow_html=True)
@@ -328,11 +341,22 @@ else:
             <p style="margin: 0; font-size: 1.0em; opacity: 0.9;">御見積合計金額 (税抜)</p>
             <div class="price-net">¥{int(net_price):,}</div>
             <div class="price-tax">(税込 ¥{int(tax_price):,})</div>
-            <p style="margin-top: 15px; font-size: 0.85em; opacity: 0.85;">
-                合計工数: {total_base_hours:.1f}h / 調整後工数: {adj_h:.1f}h
-            </p>
+            <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.2); display: flex; justify-content: space-around;">
+                <div>
+                    <p style="margin:0; font-size:0.8em; opacity:0.8;">合計工数(調整後)</p>
+                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{adj_h:.1f} h</p>
+                </div>
+                <div>
+                    <p style="margin:0; font-size:0.8em; opacity:0.8;">想定支援期間</p>
+                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{calculated_duration} ヶ月</p>
+                </div>
+                <div>
+                    <p style="margin:0; font-size:0.8em; opacity:0.8;">完了予定</p>
+                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{end_date.strftime('%Y/%m')}</p>
+                </div>
+            </div>
         </div>
-        <div style="margin-bottom: 60px;"></div>
+        <div style="margin-bottom: 40px;"></div>
         """, unsafe_allow_html=True)
 
 # --- 画面表示：見積内訳の可視化グラフ ---
@@ -440,6 +464,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
