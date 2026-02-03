@@ -7,6 +7,7 @@ from pptx import Presentation
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 import io
+import math
 
 
 # --- 準備：アプリで使うフォルダとファイルの場所を設定 ---
@@ -464,6 +465,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
