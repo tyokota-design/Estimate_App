@@ -195,7 +195,7 @@ with st.sidebar:
     st.divider()
     st.subheader("📅 スケジュール設定")
     # 月間想定稼働時間の入力（デフォルト15h）
-    monthly_work_hours = st.number_input("月間想定稼働時間 (h/月)", value=15.0, step=1.0)
+    monthly_work_hours = st.number_input("月間想定稼働時間 (h/月)", value=15.0, step=1.0, format="%g")
     
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
@@ -465,6 +465,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
