@@ -200,6 +200,11 @@ with st.sidebar:
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
+    # --- 想定期間の計算（切り上げ後、-1ヶ月する） ---
+    # ここで一度、現在の設定での暫定工数から期間を出します
+    temp_adj_h = 90.0 * multiplier if plan_type == "フルパッケージ (90h〜)" else 10.0 # 暫定値
+    duration_months = max(1, math.ceil(temp_adj_h / monthly_work_hours) - 1) if monthly_work_hours > 0 else 1
+
     # プランに応じた基礎工数の計算ロジック
     if plan_type == "フルパッケージ (90h〜)":
         # 勉強会1回分(5h)は90hに含まれる。2回目から5hずつ加算。
@@ -324,15 +329,15 @@ adj_h = total_base_hours * multiplier
 net_price = adj_h * hourly_rate
 tax_price = net_price * 1.1
 
-# --- 想定期間の自動計算 (小数点切り上げ + 1ヶ月バッファ) ---
+# --- 想定期間の自動計算 (切り上げ - 1ヶ月、最低1ヶ月) ---
 if monthly_work_hours > 0:
-    # 小数点以下切り上げ：math.ceil
-    calculated_duration = math.ceil(adj_h / monthly_work_hours) + 1
+    # 修正：切り上げから1引く
+    duration_months = max(1, math.ceil(adj_h / monthly_work_hours) - 1)
 else:
-    calculated_duration = 1
+    duration_months = 1
 
 # 終了予定月の再計算
-end_date = start_date + relativedelta(months=calculated_duration)
+end_date = start_date + relativedelta(months=duration_months)
 
 if is_special_case:
     st.markdown('<div style="background-color: #EB5228; color: white; padding: 20px; border-radius: 10px; text-align: center; font-size: 1.5em; font-weight: bold; margin-top: 20px;">個別見積（SAへ要相談）</div>', unsafe_allow_html=True)
@@ -465,6 +470,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
