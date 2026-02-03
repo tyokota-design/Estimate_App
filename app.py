@@ -330,13 +330,18 @@ tax_price = net_price * 1.1
 
 # --- 想定期間の自動計算 (切り上げ - 1ヶ月、最低1ヶ月) ---
 if monthly_work_hours > 0:
-    # 修正：切り上げから1引く
-    duration_months = max(1, math.ceil(adj_h / monthly_work_hours) - 1)
+    base_duration = math.ceil(adj_h / monthly_work_hours)
+    min_duration = max(1, base_duration - 1) # 最短
+    max_duration = max(1, base_duration)     # 最長
 else:
-    duration_months = 1
+    min_duration = 1
+    max_duration = 1
 
-# 終了予定月の再計算
-end_date = start_date + relativedelta(months=duration_months)
+# 支援期間の表示用テキスト
+duration_display = f"{min_duration} ヶ月 ～ {max_duration} ヶ月"
+
+# 終了予定月は「最長」の方で計算（余裕を見るため）
+end_date = start_date + relativedelta(months=max_duration)
 
 if is_special_case:
     st.markdown('<div style="background-color: #EB5228; color: white; padding: 20px; border-radius: 10px; text-align: center; font-size: 1.5em; font-weight: bold; margin-top: 20px;">個別見積（SAへ要相談）</div>', unsafe_allow_html=True)
@@ -353,7 +358,7 @@ else:
                 </div>
                 <div>
                     <p style="margin:0; font-size:0.8em; opacity:0.8;">想定支援期間</p>
-                    <p style="margin:0; font-size:1.2em; font-weight:bold;">{int(duration_months)} ヶ月</p>
+                    <p style="margin:0; font-size:1.1em; font-weight:bold;">{duration_display}</p>
                 </div>
                 <div>
                     <p style="margin:0; font-size:0.8em; opacity:0.8;">完了予定</p>
@@ -469,6 +474,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
