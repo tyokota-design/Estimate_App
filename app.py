@@ -280,11 +280,20 @@ else:
                         st.divider()
                         
                         for _, row in c_df.iterrows():
+                            # 各タスク固有のIDを作成（これが状態を保持する鍵になります）
                             t_key = f"task_{row['Category']}_{row['Task']}"
+                            
+                            # セッションに値がない場合のみ初期値をセット
+                            if t_key not in st.session_state:
+                                st.session_state[t_key] = row['Required']
+                            
                             base_h = row["Hours"]
+                            # スライサー（group_multiplier）が動いても計算はし直すが、チェック状態はt_keyで守る
                             calc_h = base_h * group_multiplier if (company_count > 0 and row["Group"] != "共通") else base_h
                             
+                            # チェックボックス（valueにsession_stateを紐付け）
                             is_checked = st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
+                            
                             desc_text = str(row.get('Description', '')).strip()
                             if desc_text and desc_text != 'nan' and desc_text != '':
                                 st.markdown(f'<div class="desc-box">💡 {desc_text}</div>', unsafe_allow_html=True)
@@ -427,7 +436,7 @@ if selected_tasks_list and not is_special_case:
             ["会社名", company_name],
             ["支援開始予定月", start_date.strftime('%Y年%m月')],
             ["支援終了予定月", end_date.strftime('%Y年%m月')],
-            ["支援期間", f"{duration_months}ヶ月"],
+            ["支援期間", duration_display], 
             ["企業規模", company_scale],
             ["企業規模係数", f"x {multiplier}"],
             ["グループ会社数", f"{company_count}社" if company_count <= 5 else "5社超"],
@@ -474,6 +483,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
