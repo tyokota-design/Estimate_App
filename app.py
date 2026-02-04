@@ -199,25 +199,21 @@ with st.sidebar:
             
     st.divider()
     st.subheader("📅 スケジュール設定")
-    # 月間想定稼働時間の入力（デフォルト15h）
     monthly_work_hours = st.number_input("月間想定稼働時間 (h/月)", value=15.0, step=1.0, format="%g")
-    
     mtg_freq = st.number_input("定期MTG回数 / 月", value=2)
     workshop_count = st.number_input("勉強会開催回数", value=1, max_value=2 if company_count > 0 else 5)
 
-    # --- 想定期間の計算（切り上げ後、-1ヶ月する） ---
-    # ここで一度、現在の設定での暫定工数から期間を出します
-    temp_adj_h = 90.0 * multiplier if plan_type == "フルパッケージ (90h〜)" else 10.0 # 暫定値
+    # 暫定の期間を計算（循環参照を防ぐため、ここでは初期値ベース）
+    temp_adj_h = 90.0 if plan_type == "フルパッケージ (90h〜)" else 20.0
     duration_months = max(1, math.ceil(temp_adj_h / monthly_work_hours) - 1) if monthly_work_hours > 0 else 1
 
-    # プランに応じた基礎工数の計算ロジック
+    # その後に工数を計算する
     if plan_type == "フルパッケージ (90h〜)":
         add_workshop_h = max(0, (workshop_count - 1) * 5.0)
         fixed_hours = 90.0 + add_workshop_h + english_hours
     else:
-        # ピンポイント時は、期間に依存しない「ベース工数」のみをここで定義
-        # MTG工数はメイン画面の集計時に加算するようにします
-        fixed_hours = (workshop_count * 5.0) + english_hours
+        # これで duration_months がエラーにならず計算できる
+        fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
 
 
 # --- メイン画面：タスク選択エリア ---
@@ -493,6 +489,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
