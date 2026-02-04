@@ -101,13 +101,16 @@ def toggle_group_all(group_name, key):
     new_state = st.session_state[key]
     g_df = df_master[df_master["Group"] == group_name]
     for _, row in g_df.iterrows():
+        # 子タスクのキーを直接更新
         st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
+        # カテゴリの一括チェックも連動
         st.session_state[f"all_cat_{row['Category']}"] = new_state
 
 def toggle_category_all(cat_name, key):
     new_state = st.session_state[key]
     c_df = df_master[df_master["Category"] == cat_name]
     for _, row in c_df.iterrows():
+        # 子タスクのキーを直接更新
         st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
 
 # --- サイドバー：基本情報の入力エリア ---
@@ -279,27 +282,29 @@ else:
                         st.divider()
                         
                         for _, row in c_df.iterrows():
-                            # 各タスク固有のID（キー）を作成
                             t_key = f"task_{row['Category']}_{row['Task']}"
                             
-                            # 【重要】セッション状態が未定義の場合は、マスタのデフォルト(Required)を入れる
+                            # 初回のみ初期値をセット。2回目以降（スライサー操作時など）は既存の値を維持。
                             if t_key not in st.session_state:
                                 st.session_state[t_key] = row['Required']
                             
                             base_h = row["Hours"]
-                            # スライサー（group_multiplier）が動いても計算はし直すが、チェック状態はt_keyで守る
                             calc_h = base_h * group_multiplier if (company_count > 0 and row["Group"] != "共通") else base_h
                             
-                            # チェックボックス：keyを指定することで、操作しても状態が保持されます
-                            is_checked = st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
+                            # 【修正ポイント】value引数を使わず、keyだけで管理する
+                            # これにより、セッション状態が直接チェックボックスの表示に反映されます
+                            st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
                             
+                            # チェック状態の判定はセッションステートから直接行う
+                            is_checked = st.session_state[t_key]
+
                             desc_text = str(row.get('Description', '')).strip()
                             if desc_text and desc_text != 'nan' and desc_text != '':
                                 st.markdown(f'<div class="desc-box">💡 {desc_text}</div>', unsafe_allow_html=True)
 
-                            # チェックがついているものだけを集計用リストに追加
-                            if st.session_state[t_key]:
+                            if is_checked:
                                 total_base_hours += calc_h
+                                # (以下、selected_tasks_list.append の処理はそのまま)
                                 display_cat = "その他" if (cat_name.startswith("0") or not cat_name.startswith("C")) else cat_name
                                 selected_tasks_list.append({
                                     "Category": display_cat, 
@@ -307,6 +312,7 @@ else:
                                     "Hours": calc_h,
                                     "Description": desc_text if desc_text != 'nan' else ""
                                 })
+
 
 # --- 画面表示：現在の選択タスク一覧 ---
 if selected_tasks_list and not is_special_case:
@@ -483,6 +489,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
