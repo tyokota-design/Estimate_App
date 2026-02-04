@@ -207,13 +207,12 @@ with st.sidebar:
 
     # プランに応じた基礎工数の計算ロジック
     if plan_type == "フルパッケージ (90h〜)":
-        # 勉強会1回分(5h)は90hに含まれる。2回目から5hずつ加算。
-        # 英語対応(+10h)も別途加算。
         add_workshop_h = max(0, (workshop_count - 1) * 5.0)
         fixed_hours = 90.0 + add_workshop_h + english_hours
     else:
-        # ピンポイント（各要素の積み上げ）
-        fixed_hours = (duration_months * mtg_freq * 1.0) + (workshop_count * 5.0) + english_hours
+        # ピンポイント時は、期間に依存しない「ベース工数」のみをここで定義
+        # MTG工数はメイン画面の集計時に加算するようにします
+        fixed_hours = (workshop_count * 5.0) + english_hours
 
 
 # --- メイン画面：タスク選択エリア ---
@@ -280,10 +279,10 @@ else:
                         st.divider()
                         
                         for _, row in c_df.iterrows():
-                            # 各タスク固有のIDを作成（これが状態を保持する鍵になります）
+                            # 各タスク固有のID（キー）を作成
                             t_key = f"task_{row['Category']}_{row['Task']}"
                             
-                            # セッションに値がない場合のみ初期値をセット
+                            # 【重要】セッション状態が未定義の場合は、マスタのデフォルト(Required)を入れる
                             if t_key not in st.session_state:
                                 st.session_state[t_key] = row['Required']
                             
@@ -291,14 +290,15 @@ else:
                             # スライサー（group_multiplier）が動いても計算はし直すが、チェック状態はt_keyで守る
                             calc_h = base_h * group_multiplier if (company_count > 0 and row["Group"] != "共通") else base_h
                             
-                            # チェックボックス（valueにsession_stateを紐付け）
+                            # チェックボックス：keyを指定することで、操作しても状態が保持されます
                             is_checked = st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
                             
                             desc_text = str(row.get('Description', '')).strip()
                             if desc_text and desc_text != 'nan' and desc_text != '':
                                 st.markdown(f'<div class="desc-box">💡 {desc_text}</div>', unsafe_allow_html=True)
 
-                            if is_checked:
+                            # チェックがついているものだけを集計用リストに追加
+                            if st.session_state[t_key]:
                                 total_base_hours += calc_h
                                 display_cat = "その他" if (cat_name.startswith("0") or not cat_name.startswith("C")) else cat_name
                                 selected_tasks_list.append({
@@ -483,6 +483,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
