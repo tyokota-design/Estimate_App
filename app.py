@@ -98,20 +98,22 @@ st.markdown("""
 
 # --- 内部関数：一括選択ボタンの挙動 ---
 def toggle_group_all(group_name, key):
+    # 親のチェック状態を取得
     new_state = st.session_state[key]
     g_df = df_master[df_master["Group"] == group_name]
     for _, row in g_df.iterrows():
-        # 子タスクのキーを直接更新
-        st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
-        # カテゴリの一括チェックも連動
+        # 子のセッションステートを直接書き換える
+        t_key = f"task_{row['Category']}_{row['Task']}"
+        st.session_state[t_key] = new_state
+        # カテゴリチェックも同期
         st.session_state[f"all_cat_{row['Category']}"] = new_state
 
 def toggle_category_all(cat_name, key):
     new_state = st.session_state[key]
     c_df = df_master[df_master["Category"] == cat_name]
     for _, row in c_df.iterrows():
-        # 子タスクのキーを直接更新
-        st.session_state[f"task_{row['Category']}_{row['Task']}"] = new_state
+        t_key = f"task_{row['Category']}_{row['Task']}"
+        st.session_state[t_key] = new_state
 
 # --- サイドバー：基本情報の入力エリア ---
 with st.sidebar:
@@ -284,18 +286,20 @@ else:
                         for _, row in c_df.iterrows():
                             t_key = f"task_{row['Category']}_{row['Task']}"
                             
-                            # 初回のみ初期値をセット。2回目以降（スライサー操作時など）は既存の値を維持。
+                            # --- 💡 ここが魔法の修正 ---
+                            # セッションに値がない時（初回のみ）だけ、マスタの初期値をセットする
+                            # これにより、スライサーを動かしても既存のチェック状態が上書きされません
                             if t_key not in st.session_state:
                                 st.session_state[t_key] = row['Required']
                             
                             base_h = row["Hours"]
+                            # スライサー連動の計算は「表示用」と「集計用」にだけ使う
                             calc_h = base_h * group_multiplier if (company_count > 0 and row["Group"] != "共通") else base_h
                             
-                            # 【修正ポイント】value引数を使わず、keyだけで管理する
-                            # これにより、セッション状態が直接チェックボックスの表示に反映されます
+                            # チェックボックスを作成（valueは指定せず、keyだけで状態を管理）
                             st.checkbox(f"　{row['Task']} ({calc_h:.1f}h)", key=t_key)
                             
-                            # チェック状態の判定はセッションステートから直接行う
+                            # 最終的な判定はセッションステートから直接読み取る
                             is_checked = st.session_state[t_key]
 
                             desc_text = str(row.get('Description', '')).strip()
@@ -489,6 +493,7 @@ if selected_tasks_list and not is_special_case:
             use_container_width=True,
 
         )
+
 
 
 
